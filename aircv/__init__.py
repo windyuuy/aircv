@@ -116,6 +116,7 @@ def find_all_template(im_source, im_search, threshold=0.5, maxcnt=0, rgb=False, 
     # method = cv2.TM_SQDIFF_NORMED
     method = cv2.TM_CCOEFF_NORMED
 
+    # 如果是直接img=cv2.imread('sd.png',0)打开，则不需要分割或转为灰度图，因为是灰度图模式
     if rgb:
         s_bgr = cv2.split(im_search) # Blue Green Red
         i_bgr = cv2.split(im_source)
@@ -131,12 +132,14 @@ def find_all_template(im_source, im_search, threshold=0.5, maxcnt=0, rgb=False, 
         if bgremove:
             s_gray = cv2.Canny(s_gray, 100, 200)
             i_gray = cv2.Canny(i_gray, 100, 200)
-
+        
+        # cv2.matchTemplate 遍历计算所有滑动区对应顶点的匹配度，存储为numpy.array数组中作为返回值
         res = cv2.matchTemplate(i_gray, s_gray, method)
     w, h = im_search.shape[1], im_search.shape[0]
 
     result = []
     while True:
+        # 获取 numpy.array 中最大最小值以及相应的矩阵坐标
         min_val, max_val, min_loc, max_loc = cv2.minMaxLoc(res)
         if method in [cv2.TM_SQDIFF, cv2.TM_SQDIFF_NORMED]:
             top_left = min_loc
@@ -156,6 +159,7 @@ def find_all_template(im_source, im_search, threshold=0.5, maxcnt=0, rgb=False, 
         if maxcnt and len(result) >= maxcnt:
             break
         # floodfill the already found area
+        # 将已经搜索到的最大值峰区(max_val-(threshold-0.1),1) 全部涂黑屏蔽，以用于搜寻下一个最大值
         cv2.floodFill(res, None, max_loc, (-1000,), max_val-threshold+0.1, 1, flags=cv2.FLOODFILL_FIXED_RANGE)
     return result
 
